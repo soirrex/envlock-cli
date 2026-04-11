@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    "module": "NodeNext",
+    "target": "ESNext",
+    "types": ["node", "jest"],
+
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    "strict": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "skipLibCheck": true,
+    "moduleResolution": "nodenext",
+    "allowSyntheticDefaultImports": true,
+    "ignoreDeprecations": "6.0",
+
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"],
+  "lib": ["ESNext"],
+  "ts-node": { "esm": true }
+}

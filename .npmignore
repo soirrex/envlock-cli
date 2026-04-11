@@ -1,0 +1,12 @@
+node_modules/
+dist/
+
+*.spec.ts
+*.test.ts
+.prettierrc
+.eslint.config.ts
+jest.config.ts
+
+.git/
+.env
+.gitignore
