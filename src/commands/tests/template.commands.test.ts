@@ -389,9 +389,24 @@ describe("Template commands test", () => {
       expect(mockTemplatesRepository.updateTemplateById).not.toHaveBeenCalled();
     });
 
+    it("should throw error if template with this new name already exists", async () => {
+      mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
+      mockTemplatesRepository.getTemplateByName
+        .mockResolvedValueOnce(mockTemplate)
+        .mockResolvedValueOnce(mockTemplate);
+
+      await expect(
+        commands.updateTemplateByName(mockTemplate.name, "newName", "newDescription"),
+      ).rejects.toThrow("template with this new name already axists");
+
+      expect(mockTemplatesRepository.updateTemplateById).not.toHaveBeenCalled();
+    });
+
     it("update template", async () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockTemplatesRepository.getTemplateByName
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockTemplate);
 
       const updatedMockTemplate = {
         name: "newName",

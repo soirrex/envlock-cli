@@ -14,7 +14,7 @@ export class App {
     @inject(DBConfig) private readonly dbConfig: DBConfig,
     @inject(PasswordCommands) private readonly passwordCommands: PasswordCommands,
     @inject(EnvTemplateCommands) private readonly envTemplateCommands: EnvTemplateCommands,
-  ) { }
+  ) {}
 
   private handleError(error: unknown) {
     if (error instanceof Error) {
@@ -30,13 +30,17 @@ export class App {
       .description("Set or remove a master password to encrypt your data")
       .option("-r, --remove", "remove mester password")
       .action(async (options) => {
-        let message: string;
-        if (options.remove) {
-          message = await this.passwordCommands.removeMasterPassword();
-        } else {
-          message = await this.passwordCommands.setMasterPassword();
+        try {
+          let message: string;
+          if (options.remove) {
+            message = await this.passwordCommands.removeMasterPassword();
+          } else {
+            message = await this.passwordCommands.setMasterPassword();
+          }
+          console.log(message);
+        } catch (err: unknown) {
+          this.handleError(err);
         }
-        console.log(message);
       });
 
     this.program
