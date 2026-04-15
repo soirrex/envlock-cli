@@ -8,5 +8,6 @@ dist/
 jest.config.ts
 
 .git/
+.github/
 .env
 .gitignore

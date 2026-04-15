@@ -164,6 +164,13 @@ export class EnvTemplateCommands {
 
     await this.checkMasterPassword();
 
+    if (newName) {
+      const templateWitNewName = await this.templatesRepository.getTemplateByName(name);
+      if (templateWitNewName) {
+        throw new Error("template with this new name already axists");
+      }
+    }
+
     const template = await this.templatesRepository.getTemplateByName(name);
 
     if (!template) {
