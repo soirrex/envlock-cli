@@ -137,7 +137,7 @@ export class App {
   }
 
   start() {
-    this.program.name("el").version("1.0.1");
+    this.program.name("el").version("1.0.2");
 
     this.registerCommands();
     this.createHomeDir();
