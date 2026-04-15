@@ -14,7 +14,7 @@ npm run build
 npm i -g .
 ```
 
-### Install viw npm:
+### Install via npm:
 
 ```
 npm i -g envlock-cli
