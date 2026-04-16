@@ -1,4 +1,12 @@
-# envlock-cli
+<h1 align="center">envlock-cli</h1>
+
+<div align="center">
+  <img alt="GitHub License" src="https://img.shields.io/github/license/soirrex/envlock-cli">
+  <img alt="NPM Version" src="https://img.shields.io/npm/v/envlock-cli">
+  <img alt="NPM Downloads" src="https://img.shields.io/npm/dm/envlock-cli">
+</div>
+
+<br>
 
 envlock-cli is a command-line application (CLI) designed for securely managing .env file templates. envlock-cli allows you to store templates locally on your computer, protect them with a master password, and quickly integrate them into projects
 
