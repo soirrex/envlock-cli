@@ -13,7 +13,7 @@ describe("Crypto service test", () => {
     it("should throw an error if the password is empty", () => {
       expect(() => {
         service.encrypt("", "data");
-      }).toThrow("the password cannot be empty, please enter a valid master password");
+      }).toThrow("the password cannot be empty, please enter a valid password");
     });
 
     it("should throw an error if the data is empty", () => {
@@ -41,7 +41,7 @@ describe("Crypto service test", () => {
       expect(() => {
         service.decrypt("wrong_password", encrypted_data, salt, iv, tag);
       }).toThrow(
-        "Unable to decrypt the data: the data may be corrupted, or the master password may be incorrect",
+        "Unable to decrypt the data: the data may be corrupted, or the password may be incorrect",
       );
 
       expect(() => {
@@ -57,7 +57,7 @@ describe("Crypto service test", () => {
           crypto.randomBytes(16).toString("base64"),
         );
       }).toThrow(
-        "Unable to decrypt the data: the data may be corrupted, or the master password may be incorrect",
+        "Unable to decrypt the data: the data may be corrupted, or the password may be incorrect",
       );
     });
 

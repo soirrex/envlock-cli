@@ -49,7 +49,7 @@ export class App {
       .argument("<name>", "Template name")
       .option("-d, --description <description>", "Description for template")
       .option("-f, --file <path>", "Copy file to template")
-      .option("-p, --password <password>", "Use a different password (not a master)")
+      .option("-p, --password", "Use a different password (not a master)")
       .action(async (name, options) => {
         try {
           const message = await this.envTemplateCommands.saveTemplate(
@@ -68,7 +68,7 @@ export class App {
       .command("get")
       .description("Get templates")
       .option("-n, --name <name>", "get template by name")
-      .option("-p, --password <password>", "Use a different password (not a master)")
+      .option("-p, --password", "Use a different password (not a master)")
       .action(async (options) => {
         try {
           if (options.name) {
@@ -92,7 +92,7 @@ export class App {
       .argument("<name>", "Template name")
       .argument("<path>", "File path")
       .option("-o, --overwrite", "overwrite the file with the template")
-      .option("-p, --password <password>", "Use a different password (not a master)")
+      .option("-p, --password", "Use a different password (not a master)")
       .action(async (name, path, options) => {
         try {
           const message = await this.envTemplateCommands.writeTemplateToFile(

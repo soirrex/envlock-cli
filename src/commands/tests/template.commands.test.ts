@@ -143,7 +143,6 @@ describe("Template commands test", () => {
     });
 
     it("save template with manual input with a different password", async () => {
-      mockPasswordRepository.getMasterPassword.mockResolvedValue(null);
       mockTemplatesRepository.getTemplateByName.mockResolvedValue(null);
       mockCryptoService.encrypt.mockReturnValue({
         encrypted_data: mockTemplate.encrypted_data,
@@ -152,16 +151,17 @@ describe("Template commands test", () => {
         tag: mockTemplate.tag,
       });
 
-      jest.spyOn(inquirer, "prompt" as any).mockResolvedValue({ template: "template text data" });
+      jest
+        .spyOn(inquirer, "prompt" as any)
+        .mockResolvedValueOnce({ password: "different password" })
+        .mockResolvedValueOnce({ template: "template text data" });
 
-      const result = await commands.saveTemplate(
-        mockTemplate.name,
-        undefined,
-        undefined,
-        "password",
+      const result = await commands.saveTemplate(mockTemplate.name, undefined, undefined, true);
+
+      expect(mockCryptoService.encrypt).toHaveBeenCalledWith(
+        "different password",
+        "template text data",
       );
-
-      expect(mockCryptoService.encrypt).toHaveBeenCalledWith("password", "template text data");
       expect(mockTemplatesRepository.createTemplate).toHaveBeenCalledWith(
         mockTemplate.name,
         null,
@@ -223,6 +223,32 @@ describe("Template commands test", () => {
       );
     });
 
+    it("should throw error if different password is empty", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(null);
+      mockCryptoService.encrypt.mockReturnValue({
+        encrypted_data: "encrypted_datainbase64",
+        salt: "random_salt",
+        iv: "random_iv",
+        tag: "auth_tag",
+      });
+
+      jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
+      jest.spyOn(fs, "readFileSync" as any).mockReturnValue("template text data");
+
+      jest.spyOn(inquirer, "prompt" as any).mockResolvedValue({ password: "" });
+
+      await expect(
+        commands.saveTemplate(
+          mockTemplate.name,
+          mockTemplate.description as string,
+          "/path/to/.env",
+          true,
+        ),
+      ).rejects.toThrow("the password cannot be empty, please enter a valid password");
+
+      expect(mockTemplatesRepository.createTemplate).not.toHaveBeenCalled();
+    });
+
     it("save template with copy file with a different password", async () => {
       mockTemplatesRepository.getTemplateByName.mockResolvedValue(null);
       mockCryptoService.encrypt.mockReturnValue({
@@ -235,16 +261,21 @@ describe("Template commands test", () => {
       jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
       jest.spyOn(fs, "readFileSync" as any).mockReturnValue("template text data");
 
+      jest.spyOn(inquirer, "prompt" as any).mockResolvedValue({ password: "different password" });
+
       const result = await commands.saveTemplate(
         mockTemplate.name,
         mockTemplate.description as string,
         "/path/to/.env",
-        "password",
+        true,
       );
 
       expect(result).toEqual("the template has been successfully saved");
 
-      expect(mockCryptoService.encrypt).toHaveBeenCalledWith("password", "template text data");
+      expect(mockCryptoService.encrypt).toHaveBeenCalledWith(
+        "different password",
+        "template text data",
+      );
       expect(mockTemplatesRepository.createTemplate).toHaveBeenCalledWith(
         mockTemplate.name,
         mockTemplate.description,
@@ -312,16 +343,31 @@ describe("Template commands test", () => {
       );
     });
 
+    it("should throw error if the different password is empty", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockCryptoService.decrypt.mockReturnValue("template data");
+
+      jest.spyOn(inquirer, "prompt" as any).mockResolvedValue({ password: "" });
+
+      await expect(commands.getTemplateByName(mockTemplate.name, true)).rejects.toThrow(
+        "the password cannot be empty, please enter a valid password",
+      );
+
+      expect(mockCryptoService.decrypt).not.toHaveBeenCalled();
+    });
+
     it("get template by name with a different password", async () => {
       mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
       mockCryptoService.decrypt.mockReturnValue("template data");
 
-      const result = await commands.getTemplateByName(mockTemplate.name, "password");
+      jest.spyOn(inquirer, "prompt" as any).mockResolvedValue({ password: "different password" });
+
+      const result = await commands.getTemplateByName(mockTemplate.name, true);
 
       expect(result).toEqual("\n" + "template data");
 
       expect(mockCryptoService.decrypt).toHaveBeenCalledWith(
-        "password",
+        "different password",
         mockTemplate.encrypted_data,
         mockTemplate.salt,
         mockTemplate.iv,
@@ -370,48 +416,6 @@ describe("Template commands test", () => {
       ).rejects.toThrow("this template not found");
     });
 
-    it("should write template to file with overwrite enabled", async () => {
-      mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
-      mockCryptoService.decrypt.mockReturnValue("decrypted content");
-
-      jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
-      jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
-
-      const result = await commands.writeTemplateToFile(mockTemplate.name, "/path/to/file", true);
-
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        path.join(process.cwd(), "/path/to/file"),
-        "decrypted content",
-        "utf8",
-      );
-
-      expect(result).toEqual("the template has been successfully written to the file");
-    });
-
-    it("should write template to file with overwrite enabled with a different password", async () => {
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
-      mockCryptoService.decrypt.mockReturnValue("decrypted content");
-
-      jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
-      jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
-
-      const result = await commands.writeTemplateToFile(
-        mockTemplate.name,
-        "/path/to/file",
-        true,
-        "password",
-      );
-
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        path.join(process.cwd(), "/path/to/file"),
-        "decrypted content",
-        "utf8",
-      );
-
-      expect(result).toEqual("the template has been successfully written to the file");
-    });
-
     it("should append template to file with overwrite disabled", async () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
@@ -431,23 +435,62 @@ describe("Template commands test", () => {
       expect(result).toEqual("the template has been successfully written to the file");
     });
 
-    it("should append template to file with overwrite disabled with a different password", async () => {
+    it("should write template to file with overwrite enabled", async () => {
+      mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
       mockCryptoService.decrypt.mockReturnValue("decrypted content");
 
       jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
-      jest.spyOn(fs, "appendFileSync").mockImplementation(() => {});
+      jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+
+      const result = await commands.writeTemplateToFile(mockTemplate.name, "/path/to/file", true);
+
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        path.join(process.cwd(), "/path/to/file"),
+        "decrypted content",
+        "utf8",
+      );
+
+      expect(result).toEqual("the template has been successfully written to the file");
+    });
+
+    it("should throw error in different password is empty", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockCryptoService.decrypt.mockReturnValue("decrypted content");
+
+      jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
+      jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+
+      jest.spyOn(inquirer, "prompt" as any).mockResolvedValueOnce({ password: "" });
+
+      await expect(
+        commands.writeTemplateToFile(mockTemplate.name, "/path/to/file", true, true),
+      ).rejects.toThrow("the password cannot be empty, please enter a valid password");
+
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it("should write template to file with overwrite enabled with a different password", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockCryptoService.decrypt.mockReturnValue("decrypted content");
+
+      jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
+      jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+
+      jest
+        .spyOn(inquirer, "prompt" as any)
+        .mockResolvedValueOnce({ password: "different password" });
 
       const result = await commands.writeTemplateToFile(
         mockTemplate.name,
         "/path/to/file",
-        false,
-        "password",
+        true,
+        true,
       );
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
         path.join(process.cwd(), "/path/to/file"),
-        "\ndecrypted content",
+        "decrypted content",
         "utf8",
       );
 

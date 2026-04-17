@@ -8,7 +8,7 @@ export class CryptoService {
     data: string,
   ): { tag: string; encrypted_data: string; salt: string; iv: string } {
     if (!password || password.length < 1) {
-      throw new Error("the password cannot be empty, please enter a valid master password");
+      throw new Error("the password cannot be empty, please enter a valid password");
     } else if (!data || data.length < 1) {
       throw new Error("the data cannot be empty, please enter a valid data to encrypt");
     }
@@ -31,7 +31,7 @@ export class CryptoService {
 
   decrypt(password: string, encrypted_data: string, salt: string, iv: string, tag: string): string {
     if (!password || password.length < 1) {
-      throw new Error("the password cannot be empty, please enter a valid master password");
+      throw new Error("the password cannot be empty, please enter a valid password");
     }
 
     const key = this.generateKey(password, Buffer.from(salt, "base64"));
@@ -45,7 +45,7 @@ export class CryptoService {
       decrypted = decipher.update(encrypted_data, "base64", "utf8") + decipher.final("utf8");
     } catch {
       throw new Error(
-        "Unable to decrypt the data: the data may be corrupted, or the master password may be incorrect",
+        "Unable to decrypt the data: the data may be corrupted, or the password may be incorrect",
       );
     }
 

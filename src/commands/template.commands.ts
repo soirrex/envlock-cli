@@ -24,7 +24,7 @@ export class EnvTemplateCommands {
     name: string,
     description?: string,
     file?: string,
-    password?: string,
+    password?: boolean,
   ): Promise<string> {
     if (name.trim().length < 1) {
       throw new Error("the name cannot be empty");
@@ -34,7 +34,21 @@ export class EnvTemplateCommands {
       throw new Error("the description is too long, max 200 characters");
     }
 
-    const encryptPassword: string = password ? password : await this.checkMasterPassword();
+    let encryptPassword: string;
+
+    if (password) {
+      const answers = await inquirer.prompt([
+        { name: "password", type: "password", message: "Enter password:", mask: "*" },
+      ]);
+
+      if (!answers.password || answers.password.length < 1) {
+        throw new Error("the password cannot be empty, please enter a valid password");
+      }
+
+      encryptPassword = answers.password;
+    } else {
+      encryptPassword = await this.checkMasterPassword();
+    }
 
     const findTemplate = await this.templatesRepository.getTemplateByName(name);
     if (findTemplate) {
@@ -87,12 +101,27 @@ export class EnvTemplateCommands {
     return result;
   }
 
-  async getTemplateByName(name: string, password?: string): Promise<string> {
+  async getTemplateByName(name: string, password?: boolean): Promise<string> {
     if (name.trim().length < 1) {
       throw new Error("the name cannot be empty");
     }
 
-    const encryptPassword: string = password ? password : await this.checkMasterPassword();
+    let encryptPassword: string;
+
+    if (password) {
+      const answers = await inquirer.prompt([
+        { name: "password", type: "password", message: "Enter password:", mask: "*" },
+      ]);
+
+      if (!answers.password || answers.password.length < 1) {
+        throw new Error("the password cannot be empty, please enter a valid password");
+      }
+
+      encryptPassword = answers.password;
+    } else {
+      encryptPassword = await this.checkMasterPassword();
+    }
+
     const template = await this.templatesRepository.getTemplateByName(name);
 
     if (!template) {
@@ -114,13 +143,27 @@ export class EnvTemplateCommands {
     name: string,
     file: string,
     overwrite?: boolean,
-    password?: string,
+    password?: boolean,
   ): Promise<string> {
     if (name.trim().length < 1) {
       throw new Error("the name cannot be empty");
     }
 
-    const encryptPassword: string = password ? password : await this.checkMasterPassword();
+    let encryptPassword: string;
+
+    if (password) {
+      const answers = await inquirer.prompt([
+        { name: "password", type: "password", message: "Enter password:", mask: "*" },
+      ]);
+
+      if (!answers.password || answers.password.length < 1) {
+        throw new Error("the password cannot be empty, please enter a valid password");
+      }
+
+      encryptPassword = answers.password;
+    } else {
+      encryptPassword = await this.checkMasterPassword();
+    }
 
     const filePath = this.checkFileExists(file);
 
