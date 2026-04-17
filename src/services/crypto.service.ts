@@ -7,6 +7,12 @@ export class CryptoService {
     password: string,
     data: string,
   ): { tag: string; encrypted_data: string; salt: string; iv: string } {
+    if (!password || password.length < 1) {
+      throw new Error("the password cannot be empty, please enter a valid master password");
+    } else if (!data || data.length < 1) {
+      throw new Error("the data cannot be empty, please enter a valid data to encrypt");
+    }
+
     const salt = crypto.randomBytes(16);
     const iv = crypto.randomBytes(16);
     const key = this.generateKey(password, salt);
@@ -24,6 +30,10 @@ export class CryptoService {
   }
 
   decrypt(password: string, encrypted_data: string, salt: string, iv: string, tag: string): string {
+    if (!password || password.length < 1) {
+      throw new Error("the password cannot be empty, please enter a valid master password");
+    }
+
     const key = this.generateKey(password, Buffer.from(salt, "base64"));
 
     const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(iv, "base64"));
