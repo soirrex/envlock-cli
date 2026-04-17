@@ -142,6 +142,38 @@ describe("Template commands test", () => {
       expect(result).toEqual("the template has been successfully saved");
     });
 
+    it("save template with manual input with a different password", async () => {
+      mockPasswordRepository.getMasterPassword.mockResolvedValue(null);
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(null);
+      mockCryptoService.encrypt.mockReturnValue({
+        encrypted_data: mockTemplate.encrypted_data,
+        salt: mockTemplate.salt,
+        iv: mockTemplate.iv,
+        tag: mockTemplate.tag,
+      });
+
+      jest.spyOn(inquirer, "prompt" as any).mockResolvedValue({ template: "template text data" });
+
+      const result = await commands.saveTemplate(
+        mockTemplate.name,
+        undefined,
+        undefined,
+        "password",
+      );
+
+      expect(mockCryptoService.encrypt).toHaveBeenCalledWith("password", "template text data");
+      expect(mockTemplatesRepository.createTemplate).toHaveBeenCalledWith(
+        mockTemplate.name,
+        null,
+        mockTemplate.encrypted_data,
+        mockTemplate.salt,
+        mockTemplate.iv,
+        mockTemplate.tag,
+      );
+
+      expect(result).toEqual("the template has been successfully saved");
+    });
+
     it("should throw error if file not found", async () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       mockTemplatesRepository.getTemplateByName.mockResolvedValue(null);
@@ -190,16 +222,42 @@ describe("Template commands test", () => {
         "auth_tag",
       );
     });
+
+    it("save template with copy file with a different password", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(null);
+      mockCryptoService.encrypt.mockReturnValue({
+        encrypted_data: "encrypted_datainbase64",
+        salt: "random_salt",
+        iv: "random_iv",
+        tag: "auth_tag",
+      });
+
+      jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
+      jest.spyOn(fs, "readFileSync" as any).mockReturnValue("template text data");
+
+      const result = await commands.saveTemplate(
+        mockTemplate.name,
+        mockTemplate.description as string,
+        "/path/to/.env",
+        "password",
+      );
+
+      expect(result).toEqual("the template has been successfully saved");
+
+      expect(mockCryptoService.encrypt).toHaveBeenCalledWith("password", "template text data");
+      expect(mockTemplatesRepository.createTemplate).toHaveBeenCalledWith(
+        mockTemplate.name,
+        mockTemplate.description,
+        "encrypted_datainbase64",
+        "random_salt",
+        "random_iv",
+        "auth_tag",
+      );
+    });
   });
 
   describe("Get all templates", () => {
-    it("should throw error if user don't have a password", async () => {
-      mockPasswordRepository.getMasterPassword.mockResolvedValue(null);
-      await expect(commands.getAllTemplates()).rejects.toThrow("you don't have a master password");
-    });
-
     it("get all user templates", async () => {
-      mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       mockTemplatesRepository.getAllTemplates.mockResolvedValue([mockTemplate]);
 
       const result = await commands.getAllTemplates();
@@ -242,6 +300,23 @@ describe("Template commands test", () => {
       mockCryptoService.decrypt.mockReturnValue("template data");
 
       const result = await commands.getTemplateByName(mockTemplate.name);
+
+      expect(result).toEqual("\n" + "template data");
+
+      expect(mockCryptoService.decrypt).toHaveBeenCalledWith(
+        "password",
+        mockTemplate.encrypted_data,
+        mockTemplate.salt,
+        mockTemplate.iv,
+        mockTemplate.tag,
+      );
+    });
+
+    it("get template by name with a different password", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockCryptoService.decrypt.mockReturnValue("template data");
+
+      const result = await commands.getTemplateByName(mockTemplate.name, "password");
 
       expect(result).toEqual("\n" + "template data");
 
@@ -314,6 +389,29 @@ describe("Template commands test", () => {
       expect(result).toEqual("the template has been successfully written to the file");
     });
 
+    it("should write template to file with overwrite enabled with a different password", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockCryptoService.decrypt.mockReturnValue("decrypted content");
+
+      jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
+      jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+
+      const result = await commands.writeTemplateToFile(
+        mockTemplate.name,
+        "/path/to/file",
+        true,
+        "password",
+      );
+
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        path.join(process.cwd(), "/path/to/file"),
+        "decrypted content",
+        "utf8",
+      );
+
+      expect(result).toEqual("the template has been successfully written to the file");
+    });
+
     it("should append template to file with overwrite disabled", async () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
@@ -323,6 +421,29 @@ describe("Template commands test", () => {
       jest.spyOn(fs, "appendFileSync").mockImplementation(() => {});
 
       const result = await commands.writeTemplateToFile(mockTemplate.name, "/path/to/file", false);
+
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        path.join(process.cwd(), "/path/to/file"),
+        "\ndecrypted content",
+        "utf8",
+      );
+
+      expect(result).toEqual("the template has been successfully written to the file");
+    });
+
+    it("should append template to file with overwrite disabled with a different password", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockCryptoService.decrypt.mockReturnValue("decrypted content");
+
+      jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
+      jest.spyOn(fs, "appendFileSync").mockImplementation(() => {});
+
+      const result = await commands.writeTemplateToFile(
+        mockTemplate.name,
+        "/path/to/file",
+        false,
+        "password",
+      );
 
       expect(fs.appendFileSync).toHaveBeenCalledWith(
         path.join(process.cwd(), "/path/to/file"),
@@ -368,16 +489,6 @@ describe("Template commands test", () => {
       expect(mockTemplatesRepository.updateTemplateById).not.toHaveBeenCalled();
     });
 
-    it("should throw error if user don't have a password", async () => {
-      mockPasswordRepository.getMasterPassword.mockResolvedValue(null);
-
-      await expect(
-        commands.updateTemplateByName(mockTemplate.name, "newName", "newDescription"),
-      ).rejects.toThrow("you don't have a master password");
-
-      expect(mockTemplatesRepository.updateTemplateById).not.toHaveBeenCalled();
-    });
-
     it("should throw error if the tamplate not found", async () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       mockTemplatesRepository.getTemplateByName.mockResolvedValue(null);
@@ -403,7 +514,6 @@ describe("Template commands test", () => {
     });
 
     it("update template", async () => {
-      mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       mockTemplatesRepository.getTemplateByName
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(mockTemplate);
@@ -444,24 +554,12 @@ describe("Template commands test", () => {
 
   describe("Remove template by name", () => {
     it("should throw error if name is empty", async () => {
-      mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       await expect(commands.removeTemplateByName("    ")).rejects.toThrow(
         "the name cannot be empty",
       );
     });
 
-    it("should throw error if user don't have a password", async () => {
-      mockPasswordRepository.getMasterPassword.mockResolvedValue(null);
-
-      await expect(commands.removeTemplateByName(mockTemplate.name)).rejects.toThrow(
-        "you don't have a master password",
-      );
-
-      expect(mockTemplatesRepository.removeTemplateByName).not.toHaveBeenCalled();
-    });
-
     it("should throw error if template not found", async () => {
-      mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       mockTemplatesRepository.getTemplateByName.mockResolvedValue(null);
 
       await expect(commands.removeTemplateByName(mockTemplate.name)).rejects.toThrow(
@@ -470,7 +568,6 @@ describe("Template commands test", () => {
     });
 
     it("should remove template and return success message", async () => {
-      mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
 
       const result = await commands.removeTemplateByName(mockTemplate.name);

@@ -20,7 +20,12 @@ export class EnvTemplateCommands {
     @inject(TemplatesRepository) private readonly templatesRepository: TemplatesRepository,
   ) {}
 
-  async saveTemplate(name: string, description?: string, file?: string): Promise<string> {
+  async saveTemplate(
+    name: string,
+    description?: string,
+    file?: string,
+    password?: string,
+  ): Promise<string> {
     if (name.trim().length < 1) {
       throw new Error("the name cannot be empty");
     } else if (name.trim().length > 50) {
@@ -29,7 +34,7 @@ export class EnvTemplateCommands {
       throw new Error("the description is too long, max 200 characters");
     }
 
-    const password = await this.checkMasterPassword();
+    const encryptPassword: string = password ? password : await this.checkMasterPassword();
 
     const findTemplate = await this.templatesRepository.getTemplateByName(name);
     if (findTemplate) {
@@ -53,7 +58,7 @@ export class EnvTemplateCommands {
       throw new Error("the template cannot be empty, please enter the .env template");
     }
 
-    const encrypted = this.cryptoService.encrypt(password, templateData);
+    const encrypted = this.cryptoService.encrypt(encryptPassword, templateData);
 
     await this.templatesRepository.createTemplate(
       name,
@@ -68,8 +73,6 @@ export class EnvTemplateCommands {
   }
 
   async getAllTemplates(): Promise<Record<string, IGetTemplate>> {
-    await this.checkMasterPassword();
-
     const templates = await this.templatesRepository.getAllTemplates();
     const result: Record<string, IGetTemplate> = {};
 
@@ -84,12 +87,12 @@ export class EnvTemplateCommands {
     return result;
   }
 
-  async getTemplateByName(name: string): Promise<string> {
+  async getTemplateByName(name: string, password?: string): Promise<string> {
     if (name.trim().length < 1) {
       throw new Error("the name cannot be empty");
     }
 
-    const password = await this.checkMasterPassword();
+    const encryptPassword: string = password ? password : await this.checkMasterPassword();
     const template = await this.templatesRepository.getTemplateByName(name);
 
     if (!template) {
@@ -97,7 +100,7 @@ export class EnvTemplateCommands {
     }
 
     const decrypted = this.cryptoService.decrypt(
-      password,
+      encryptPassword,
       template.encrypted_data,
       template.salt,
       template.iv,
@@ -107,12 +110,17 @@ export class EnvTemplateCommands {
     return "\n" + decrypted;
   }
 
-  async writeTemplateToFile(name: string, file: string, overwrite?: boolean): Promise<string> {
+  async writeTemplateToFile(
+    name: string,
+    file: string,
+    overwrite?: boolean,
+    password?: string,
+  ): Promise<string> {
     if (name.trim().length < 1) {
       throw new Error("the name cannot be empty");
     }
 
-    const password = await this.checkMasterPassword();
+    const encryptPassword: string = password ? password : await this.checkMasterPassword();
 
     const filePath = this.checkFileExists(file);
 
@@ -123,7 +131,7 @@ export class EnvTemplateCommands {
     }
 
     const decrypted = this.cryptoService.decrypt(
-      password,
+      encryptPassword,
       template.encrypted_data,
       template.salt,
       template.iv,
@@ -161,8 +169,6 @@ export class EnvTemplateCommands {
     if (newDescription && newDescription.trim().length > 200) {
       throw new Error("the description is too long, max 200 characters");
     }
-
-    await this.checkMasterPassword();
 
     if (newName) {
       const templateWitNewName = await this.templatesRepository.getTemplateByName(name);
@@ -205,8 +211,6 @@ export class EnvTemplateCommands {
     if (name.trim().length < 1) {
       throw new Error("the name cannot be empty");
     }
-
-    await this.checkMasterPassword();
 
     const template = await this.templatesRepository.getTemplateByName(name);
     if (!template) {
