@@ -147,7 +147,7 @@ export class App {
   start() {
     this.program
       .name("el")
-      .version("1.0.2")
+      .version("1.0.3")
       .description(
         "CLI tool for secure management of .env templates. It stores templates locally, encrypts them with a master password, and allows quick project integration.",
       );
