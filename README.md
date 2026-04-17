@@ -76,12 +76,16 @@ npm uni -g envlock-cli
   el save <name> --description <description>
   ```
 
+  If you want to use a different password for encryption, you can specify it with the `--password <password>` option.
+
 - **Copy the file to the template:**  
   Save the existing file as a template:
 
   ```bash
   el save <name> --file <path> --description <description>
   ```
+
+  If you want to use a different password for encryption, you can specify it with the `--password <password>` option.
 
 - **Get all templates:**  
   Get a list of all templates:
@@ -96,6 +100,8 @@ npm uni -g envlock-cli
   ```bash
   el get --name <name>
   ```
+
+  If you want to use a different password for decryption, you can specify it with the `--password <password>` option.
 
 - **Update template by name:**  
   Update template by name:
@@ -116,6 +122,8 @@ npm uni -g envlock-cli
     ```bash
     el write <name> <path> --overwrite
     ```
+
+  If you want to use a different password for decryption, you can specify it with the `--password <password>` option.
 
 - **Remove template:**  
   Remove a specific template:
