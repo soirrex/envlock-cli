@@ -4,6 +4,7 @@ import { ContainerModel } from "../../models/container.model.js";
 import { ContainersRepository } from "../../repositories/container.repository.js";
 import { ContainerCommands } from "../container.commands.js";
 import { jest } from "@jest/globals";
+import chalk from "chalk";
 
 describe("Containers commands test", () => {
   let commands: ContainerCommands;
@@ -87,7 +88,7 @@ describe("Containers commands test", () => {
 
       const result = await commands.getAllContainers();
       expect(result).toEqual(
-        "\n- null\n- \x1b[32mcontainer\x1b[39m | current container\n- container 2\n",
+        `\n- null\n- ${chalk.green("container")} | current container\n- container 2\n`,
       );
     });
 
@@ -101,7 +102,7 @@ describe("Containers commands test", () => {
       const result = await commands.getAllContainers();
 
       expect(result).toEqual(
-        "\n- \x1b[32mnull\x1b[39m | current container\n- container\n- container 2\n",
+        `\n- ${chalk.green("null")} | current container\n- container\n- container 2\n`,
       );
     });
   });
