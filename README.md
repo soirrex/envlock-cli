@@ -52,25 +52,52 @@ npm uni -g envlock-cli
   el -h <command>
   ```
 
-### Master Password Management
+### Password Management
 
-- **Set master password:**  
-  Set the master password for encryption:
+> The password that will be used for encryption and decryption by default
+
+- **Set password:**  
+  Set the password for encryption:
 
   ```bash
   el password
   ```
 
-- **Remove master password:**  
-  Remove master password:
+- **Remove password:**  
+  Remove password:
   ```bash
   el password -r
   ```
 
-### Template Management
+### Containers Management
+
+> Use containers to isolate templates from one another, once you select a specific container, all operations on the templates will be performed within that container. By default, the container is set to "null".
+
+- **Create container:**  
+  Create a new container:
+
+  ```bash
+  el container <name>
+  ```
+
+- **Get all containers:**  
+  Get all your containers:
+
+  ```bash
+  el containers
+  ```
+
+- **Switch to another container:**  
+  Switch from the current container to another one:
+
+  ```bash
+  el switch <containerName>
+  ```
+
+### Templates Management
 
 - **Save template:**  
-   Create a new template:
+  Create a new template:
 
   ```bash
   el save <name> --description <description>
@@ -93,6 +120,8 @@ npm uni -g envlock-cli
   ```bash
   el get
   ```
+
+  If you want to get all templates from all containers, you can specify it with the `--containers` option.
 
 - **Get a template by name:**  
   Get a specific template:

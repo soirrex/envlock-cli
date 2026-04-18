@@ -8,6 +8,7 @@ import path from "path";
 
 interface IGetTemplate {
   name: string;
+  container: string | null;
   description: string | null;
   createdAt: string;
 }
@@ -86,13 +87,14 @@ export class EnvTemplateCommands {
     return "the template has been successfully saved";
   }
 
-  async getAllTemplates(): Promise<Record<string, IGetTemplate>> {
-    const templates = await this.templatesRepository.getAllTemplates();
+  async getAllTemplates(ignoreCurrentContainer?: boolean): Promise<Record<string, IGetTemplate>> {
+    const templates = await this.templatesRepository.getAllTemplates(ignoreCurrentContainer);
     const result: Record<string, IGetTemplate> = {};
 
     for (let i = 0; i < templates.length; i++) {
       result[`template ${i + 1}`] = {
         name: templates[i]!.name,
+        container: templates[i]!.container.name,
         description: templates[i]!.description,
         createdAt: new Date(templates[i]!.createdAt).toLocaleString(),
       };
@@ -239,11 +241,13 @@ export class EnvTemplateCommands {
     return {
       "Old template": {
         name: template.name,
+        container: template.container.name,
         description: template.description,
         createdAt: new Date(template.createdAt).toLocaleString(),
       },
       "New template": {
         name: newTemplate.name,
+        container: template.container.name,
         description: newTemplate.description,
         createdAt: new Date(template.createdAt).toLocaleString(),
       },

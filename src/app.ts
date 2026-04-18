@@ -5,6 +5,7 @@ import { PasswordCommands } from "./commands/password.commands.js";
 import { globalVariables } from "./config/variables.config.js";
 import { DBConfig } from "./config/db.config.js";
 import { EnvTemplateCommands } from "./commands/template.commands.js";
+import { ContainerCommands } from "./commands/container.commands.js";
 
 @injectable()
 export class App {
@@ -14,6 +15,7 @@ export class App {
     @inject(DBConfig) private readonly dbConfig: DBConfig,
     @inject(PasswordCommands) private readonly passwordCommands: PasswordCommands,
     @inject(EnvTemplateCommands) private readonly envTemplateCommands: EnvTemplateCommands,
+    @inject(ContainerCommands) private readonly containerCommands: ContainerCommands,
   ) {}
 
   private handleError(error: unknown) {
@@ -67,6 +69,7 @@ export class App {
     this.program
       .command("get")
       .description("Get templates")
+      .option("-c, --containers", "get all templates from all containers")
       .option("-n, --name <name>", "get template by name")
       .option("-p, --password", "Use a different password (not a master)")
       .action(async (options) => {
@@ -78,7 +81,7 @@ export class App {
             );
             console.log(message);
           } else {
-            const message = await this.envTemplateCommands.getAllTemplates();
+            const message = await this.envTemplateCommands.getAllTemplates(options.containers);
             console.table(message);
           }
         } catch (err: unknown) {
@@ -138,10 +141,55 @@ export class App {
           this.handleError(err);
         }
       });
+
+    this.program
+      .command("container")
+      .description("Create container and assign templates to it")
+      .argument("<name>", "Container name")
+      .action(async (name) => {
+        try {
+          const message = await this.containerCommands.createContainer(name);
+          console.log(message);
+        } catch (err: unknown) {
+          this.handleError(err);
+        }
+      });
+
+    this.program
+      .command("containers")
+      .description("Get all containers")
+      .action(async () => {
+        try {
+          const message = await this.containerCommands.getAllContainers();
+          console.table(message);
+        } catch (err: unknown) {
+          this.handleError(err);
+        }
+      });
+
+    this.program
+      .command("switch")
+      .description("Switch to another container")
+      .argument("<containerName>", "Container name")
+      .action(async (containerName) => {
+        try {
+          const message = await this.containerCommands.switchToAnotherContainer(containerName);
+          console.log(message);
+        } catch (err: unknown) {
+          this.handleError(err);
+        }
+      });
   }
 
   private createHomeDir() {
     fs.mkdirSync(globalVariables.appDir, { recursive: true, mode: 0o700 });
+
+    if (!fs.existsSync(globalVariables.configPath)) {
+      fs.writeFileSync(
+        globalVariables.configPath,
+        JSON.stringify({ currentContainer: null }, null, 2),
+      );
+    }
   }
 
   start() {

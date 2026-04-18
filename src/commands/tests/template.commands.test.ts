@@ -9,6 +9,7 @@ import { TemplateModel } from "../../models/template.model.js";
 import inquirer from "inquirer";
 import fs from "fs";
 import path from "path";
+import { ContainerModel } from "../../models/container.model.js";
 
 describe("Template commands test", () => {
   let commands: EnvTemplateCommands;
@@ -26,6 +27,16 @@ describe("Template commands test", () => {
     tag: "base64tag",
     createdAt: new Date(),
   } as TemplateModel;
+
+  const mockContainer = {
+    id: 1,
+    name: "container1",
+  } as ContainerModel;
+
+  const mockTemplateWithContainer = {
+    ...mockTemplate,
+    container: mockContainer,
+  } as TemplateModel & { container: ContainerModel };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -89,7 +100,7 @@ describe("Template commands test", () => {
 
     it("should throw error if this name already exists", async () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate as TemplateModel);
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
 
       await expect(commands.saveTemplate(mockTemplate.name)).rejects.toThrow(
         "this name already exists",
@@ -289,7 +300,7 @@ describe("Template commands test", () => {
 
   describe("Get all templates", () => {
     it("get all user templates", async () => {
-      mockTemplatesRepository.getAllTemplates.mockResolvedValue([mockTemplate]);
+      mockTemplatesRepository.getAllTemplates.mockResolvedValue([mockTemplateWithContainer]);
 
       const result = await commands.getAllTemplates();
 
@@ -298,6 +309,7 @@ describe("Template commands test", () => {
           createdAt: mockTemplate.createdAt.toLocaleString(),
           description: mockTemplate.description,
           name: mockTemplate.name,
+          container: mockTemplateWithContainer.container.name,
         },
       });
     });
@@ -327,7 +339,7 @@ describe("Template commands test", () => {
 
     it("get template by name", async () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
       mockCryptoService.decrypt.mockReturnValue("template data");
 
       const result = await commands.getTemplateByName(mockTemplate.name);
@@ -344,7 +356,7 @@ describe("Template commands test", () => {
     });
 
     it("should throw error if the different password is empty", async () => {
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
       mockCryptoService.decrypt.mockReturnValue("template data");
 
       jest.spyOn(inquirer, "prompt" as any).mockResolvedValue({ password: "" });
@@ -357,7 +369,7 @@ describe("Template commands test", () => {
     });
 
     it("get template by name with a different password", async () => {
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
       mockCryptoService.decrypt.mockReturnValue("template data");
 
       jest.spyOn(inquirer, "prompt" as any).mockResolvedValue({ password: "different password" });
@@ -418,7 +430,7 @@ describe("Template commands test", () => {
 
     it("should append template to file with overwrite disabled", async () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
       mockCryptoService.decrypt.mockReturnValue("decrypted content");
 
       jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
@@ -437,7 +449,7 @@ describe("Template commands test", () => {
 
     it("should write template to file with overwrite enabled", async () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
       mockCryptoService.decrypt.mockReturnValue("decrypted content");
 
       jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
@@ -455,7 +467,7 @@ describe("Template commands test", () => {
     });
 
     it("should throw error in different password is empty", async () => {
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
       mockCryptoService.decrypt.mockReturnValue("decrypted content");
 
       jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
@@ -471,7 +483,7 @@ describe("Template commands test", () => {
     });
 
     it("should write template to file with overwrite enabled with a different password", async () => {
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
       mockCryptoService.decrypt.mockReturnValue("decrypted content");
 
       jest.spyOn(fs, "existsSync" as any).mockReturnValue(true);
@@ -546,8 +558,8 @@ describe("Template commands test", () => {
     it("should throw error if template with this new name already exists", async () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
       mockTemplatesRepository.getTemplateByName
-        .mockResolvedValueOnce(mockTemplate)
-        .mockResolvedValueOnce(mockTemplate);
+        .mockResolvedValueOnce(mockTemplateWithContainer)
+        .mockResolvedValueOnce(mockTemplateWithContainer);
 
       await expect(
         commands.updateTemplateByName(mockTemplate.name, "newName", "newDescription"),
@@ -559,7 +571,7 @@ describe("Template commands test", () => {
     it("update template", async () => {
       mockTemplatesRepository.getTemplateByName
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockTemplate);
+        .mockResolvedValueOnce(mockTemplateWithContainer);
 
       const updatedMockTemplate = {
         name: "newName",
@@ -578,11 +590,13 @@ describe("Template commands test", () => {
         "Old template": {
           createdAt: expect.any(String),
           description: mockTemplate.description,
+          container: mockTemplateWithContainer.container.name,
           name: mockTemplate.name,
         },
         "New template": {
           createdAt: expect.any(String),
           description: updatedMockTemplate.description,
+          container: mockTemplateWithContainer.container.name,
           name: updatedMockTemplate.name,
         },
       });
@@ -611,7 +625,7 @@ describe("Template commands test", () => {
     });
 
     it("should remove template and return success message", async () => {
-      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplate);
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
 
       const result = await commands.removeTemplateByName(mockTemplate.name);
 

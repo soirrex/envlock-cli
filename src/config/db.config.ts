@@ -3,6 +3,7 @@ import { Sequelize } from "sequelize";
 import path from "path";
 import { globalVariables } from "./variables.config.js";
 import { TemplateModel } from "../models/template.model.js";
+import { ContainerModel } from "../models/container.model.js";
 
 @injectable()
 export class DBConfig {
@@ -20,12 +21,25 @@ export class DBConfig {
 
   private initModels() {
     TemplateModel.initialize(this.sequelize);
+    ContainerModel.initialize(this.sequelize);
+
+    ContainerModel.hasMany(TemplateModel, {
+      foreignKey: "containerId",
+      sourceKey: "id",
+    });
+
+    TemplateModel.belongsTo(ContainerModel, {
+      foreignKey: "containerId",
+      targetKey: "id",
+      onDelete: "CASCADE",
+      as: "container",
+    });
   }
 
   async connect() {
     this.initModels();
     await this.sequelize.authenticate();
-    await this.sequelize.sync({ alter: true });
+    await this.sequelize.sync();
   }
 
   async close() {

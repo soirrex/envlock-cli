@@ -1,10 +1,16 @@
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
 import { TemplateModel } from "../models/template.model.js";
 import crypto from "crypto";
+import { ContainerModel } from "../models/container.model.js";
+import { ContainersRepository } from "./container.repository.js";
 
 @injectable()
 export class TemplatesRepository {
-  async getTemplateByName(name: string): Promise<TemplateModel | null> {
+  constructor(@inject(ContainersRepository) private containersRepository: ContainersRepository) {}
+
+  async getTemplateByName(
+    name: string,
+  ): Promise<(TemplateModel & { container: ContainerModel }) | null> {
     const template = await TemplateModel.findOne({
       where: {
         name: name.trim(),
@@ -12,7 +18,7 @@ export class TemplatesRepository {
       raw: true,
     });
 
-    return template;
+    return template as (TemplateModel & { container: ContainerModel }) | null;
   }
 
   async createTemplate(
@@ -23,9 +29,12 @@ export class TemplatesRepository {
     iv: string,
     tag: string,
   ): Promise<TemplateModel> {
+    const currentContainer = await this.containersRepository.getCurrentContainer();
+
     const template = await TemplateModel.create(
       {
         id: crypto.randomUUID(),
+        containerId: currentContainer ? currentContainer.id : null,
         name: name.trim(),
         description: description ? description.trim() : null,
         encrypted_data: encrypted_data,
@@ -39,9 +48,40 @@ export class TemplatesRepository {
     return template;
   }
 
-  async getAllTemplates(): Promise<TemplateModel[]> {
-    const templates = await TemplateModel.findAll({ raw: true });
-    return templates;
+  async getAllTemplates(
+    ignoreCurrentContainer?: boolean,
+  ): Promise<Array<TemplateModel & { container: ContainerModel }>> {
+    let templates;
+
+    if (ignoreCurrentContainer) {
+      templates = await TemplateModel.findAll({
+        include: [
+          {
+            model: ContainerModel,
+            as: "container",
+          },
+        ],
+        raw: true,
+        nest: true,
+      });
+    } else {
+      const currentContainer = await this.containersRepository.getCurrentContainer();
+      templates = await TemplateModel.findAll({
+        where: {
+          containerId: currentContainer ? currentContainer.id : null,
+        },
+        include: [
+          {
+            model: ContainerModel,
+            as: "container",
+          },
+        ],
+        raw: true,
+        nest: true,
+      });
+    }
+
+    return templates as Array<TemplateModel & { container: ContainerModel }>;
   }
 
   async updateTemplateById(

@@ -1,7 +1,8 @@
 import { DataTypes, Model, Sequelize } from "sequelize";
 
-interface TemplateAttributes {
+export interface TemplateAttributes {
   id: string;
+  containerId: number | null | undefined;
   name: string;
   description: string | null;
   encrypted_data: string;
@@ -14,6 +15,7 @@ interface TemplateAttributes {
 
 export class TemplateModel extends Model<TemplateAttributes> {
   declare id: string;
+  declare containerId: number | null | undefined;
   declare name: string;
   declare description: string | null;
   declare encrypted_data: string;
@@ -32,6 +34,11 @@ export class TemplateModel extends Model<TemplateAttributes> {
           allowNull: false,
           primaryKey: true,
           unique: true,
+        },
+        containerId: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          defaultValue: null,
         },
         name: {
           type: DataTypes.STRING(50),
@@ -59,7 +66,7 @@ export class TemplateModel extends Model<TemplateAttributes> {
         },
       },
       {
-        indexes: [{ fields: ["name"] }],
+        indexes: [{ fields: ["name"] }, { fields: ["containerId"] }],
         sequelize,
         modelName: "Template",
         tableName: "templates",
