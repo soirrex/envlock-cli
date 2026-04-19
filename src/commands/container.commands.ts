@@ -56,6 +56,38 @@ export class ContainerCommands {
     return "\n" + message || "no containers found";
   }
 
+  async updateContainer(containerName: string, newName: string) {
+    if (!containerName || containerName.trim().length < 1) {
+      throw new Error("the container name cannot be empty");
+    } else if (containerName.trim().length > 50) {
+      throw new Error("the container name is too long, max 50 characters");
+    } else if (containerName.trim().toLowerCase() === "null") {
+      throw new Error('you cannot update "null" container');
+    }
+
+    if (!newName || newName.trim().length < 1) {
+      throw new Error("the new name cannot be empty");
+    } else if (newName.trim().length > 50) {
+      throw new Error("the new name is too long, max 50 characters");
+    }
+
+    const container = await this.containersRepository.getContainerByName(containerName.trim());
+
+    if (!container) {
+      throw new Error("container with this name not found");
+    }
+
+    const newNameContainer = await this.containersRepository.getContainerByName(newName.trim());
+
+    if (newNameContainer) {
+      throw new Error("container with this new name already exists");
+    }
+
+    await this.containersRepository.updateContainerById(container.id!, newName.trim());
+
+    return "container has been successfully updated";
+  }
+
   async switchToAnotherContainer(containerName: string) {
     if (containerName.trim() !== "null") {
       const container = await this.containersRepository.getContainerByName(containerName.trim());

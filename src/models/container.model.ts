@@ -23,10 +23,10 @@ export class ContainerModel extends Model<ContainerAttributes> {
         name: {
           type: DataTypes.STRING(50),
           allowNull: false,
+          unique: true,
         },
       },
       {
-        indexes: [{ fields: ["name"] }],
         sequelize,
         modelName: "Container",
         tableName: "containers",

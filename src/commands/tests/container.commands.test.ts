@@ -43,6 +43,7 @@ describe("Containers commands test", () => {
       getCurrentContainer: jest.fn(),
       switchToAnotherContainer: jest.fn(),
       removeContainerById: jest.fn(),
+      updateContainerById: jest.fn(),
     } as unknown as jest.Mocked<ContainersRepository>;
 
     mockTemplatesRepository = {
@@ -162,7 +163,76 @@ describe("Containers commands test", () => {
     });
   });
 
-  describe("Remove remplate", () => {
+  describe("Update container", () => {
+    it("should throw error if container name is empty", async () => {
+      await expect(commands.updateContainer("", "new name")).rejects.toThrow(
+        new Error("the container name cannot be empty"),
+      );
+      expect(mockContainersRepository.updateContainerById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if container name is too long", async () => {
+      await expect(commands.updateContainer("a".repeat(51), "new name")).rejects.toThrow(
+        new Error("the container name is too long, max 50 characters"),
+      );
+
+      expect(mockContainersRepository.updateContainerById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if container name is empty", async () => {
+      await expect(commands.updateContainer(mockContainer.name, "")).rejects.toThrow(
+        new Error("the new name cannot be empty"),
+      );
+
+      expect(mockContainersRepository.updateContainerById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if container name is too long", async () => {
+      await expect(commands.updateContainer(mockContainer.name, "a".repeat(51))).rejects.toThrow(
+        new Error("the new name is too long, max 50 characters"),
+      );
+
+      expect(mockContainersRepository.updateContainerById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if container not found", async () => {
+      mockContainersRepository.getContainerByName.mockResolvedValue(null);
+
+      await expect(commands.updateContainer(mockContainer.name, "new name")).rejects.toThrow(
+        new Error("container with this name not found"),
+      );
+
+      expect(mockContainersRepository.updateContainerById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if container with this new name already exists", async () => {
+      mockContainersRepository.getContainerByName
+        .mockResolvedValueOnce(mockContainer)
+        .mockResolvedValueOnce(mockContainer);
+
+      await expect(commands.updateContainer(mockContainer.name, "new name")).rejects.toThrow(
+        new Error("container with this new name already exists"),
+      );
+
+      expect(mockContainersRepository.updateContainerById).not.toHaveBeenCalled();
+    });
+
+    it("update container", async () => {
+      mockContainersRepository.getContainerByName
+        .mockResolvedValueOnce(mockContainer)
+        .mockResolvedValueOnce(null);
+
+      const result = await commands.updateContainer(mockContainer.name, "new name");
+
+      expect(mockContainersRepository.updateContainerById).toHaveBeenCalledWith(
+        mockContainer.id,
+        "new name",
+      );
+      expect(result).toEqual("container has been successfully updated");
+    });
+  });
+
+  describe("Remove container", () => {
     it("should throw error if name is empty", async () => {
       await expect(commands.removeContainer("")).rejects.toThrow(
         new Error("the name cannot be empty"),

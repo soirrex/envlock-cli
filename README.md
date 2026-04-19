@@ -100,6 +100,13 @@ el dbalter
   el switch <containerName>
   ```
 
+- **Update container:**  
+  Update container by name:
+
+  ```bash
+  el uc <containerName> <newContainerName>
+  ```
+
 - **Remove container:**  
   Remove container by name:
 

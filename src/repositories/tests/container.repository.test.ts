@@ -68,7 +68,7 @@ describe("ContainersRepository", () => {
     });
   });
 
-  describe("createContainer", () => {
+  describe("Create container", () => {
     it("creates container with trimmed name", async () => {
       const getSpy = jest.spyOn(ContainerModel, "create").mockResolvedValue(undefined);
 
@@ -130,6 +130,32 @@ describe("ContainersRepository", () => {
       await expect(repo.switchToAnotherContainer("new container")).rejects.toThrow(
         new Error("Unexpected token 'o', \"not-json\" is not valid JSON"),
       );
+    });
+  });
+
+  describe("Update container", () => {
+    it("update container", async () => {
+      jest.spyOn(repo, "switchToAnotherContainer").mockImplementation(async () => {});
+
+      const updateSpy = jest.spyOn(ContainerModel, "update").mockResolvedValue([1, []] as any);
+
+      await repo.updateContainerById(1, "new name");
+
+      expect(updateSpy).toHaveBeenCalledWith({ name: "new name" }, { where: { id: 1 } });
+    });
+  });
+
+  describe("Remove contaienr", () => {
+    it("remove contaienr", async () => {
+      const removeSpy = jest.spyOn(ContainerModel, "destroy").mockResolvedValue(0);
+
+      await repo.removeContainerById(1);
+
+      expect(removeSpy).toHaveBeenCalledWith({
+        where: {
+          id: 1,
+        },
+      });
     });
   });
 });

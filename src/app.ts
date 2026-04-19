@@ -181,6 +181,20 @@ export class App {
       });
 
     this.program
+      .command("uc")
+      .description("Update container")
+      .argument("<containerName>", "Container name")
+      .argument("<newName>", "New container name")
+      .action(async (containerName, newName) => {
+        try {
+          const message = await this.containerCommands.updateContainer(containerName, newName);
+          console.log(message);
+        } catch (err: unknown) {
+          this.handleError(err);
+        }
+      });
+
+    this.program
       .command("switch")
       .description("Switch to another container")
       .argument("<containerName>", "Container name")

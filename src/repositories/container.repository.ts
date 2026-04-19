@@ -52,6 +52,11 @@ export class ContainersRepository {
     fs.writeFileSync(globalVariables.configPath, JSON.stringify(configData, null, 2));
   }
 
+  async updateContainerById(id: number, newName: string) {
+    ContainerModel.update({ name: newName.trim() }, { where: { id: id } });
+    this.switchToAnotherContainer(newName.trim());
+  }
+
   async removeContainerById(id: number) {
     await ContainerModel.destroy({
       where: {
