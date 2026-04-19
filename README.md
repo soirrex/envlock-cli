@@ -36,6 +36,12 @@ npm uni -g envlock-cli
 
 ## Usage
 
+> If you encounter an error related to a mismatch in database fields, use the following command:
+
+```bash
+el dbalter
+```
+
 ### Commands help
 
 - **Get commands help:**  

@@ -209,6 +209,18 @@ export class App {
           this.handleError(err);
         }
       });
+
+    this.program
+      .command("dbalter")
+      .description("Use the ALTER command for the database")
+      .action(async () => {
+        try {
+          await this.dbConfig.alter();
+          console.log("successfully");
+        } catch (err: unknown) {
+          this.handleError(err);
+        }
+      });
   }
 
   private createHomeDir() {
@@ -225,7 +237,7 @@ export class App {
   start() {
     this.program
       .name("el")
-      .version("1.0.4")
+      .version("1.0.5")
       .description(
         "CLI tool for secure management of .env templates. It stores templates locally, encrypts them with a master password, and allows quick project integration.",
       );

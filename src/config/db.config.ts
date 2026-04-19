@@ -42,6 +42,15 @@ export class DBConfig {
     await this.sequelize.sync();
   }
 
+  async alter() {
+    this.initModels();
+
+    await TemplateModel.sync({ alter: true });
+    await ContainerModel.sync({ alter: true });
+
+    await this.sequelize.sync({ alter: true });
+  }
+
   async close() {
     await this.sequelize.close();
   }
