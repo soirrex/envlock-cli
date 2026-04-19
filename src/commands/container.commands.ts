@@ -1,10 +1,14 @@
 import { inject, injectable } from "inversify";
 import { ContainersRepository } from "../repositories/container.repository.js";
 import chalk from "chalk";
+import { TemplatesRepository } from "../repositories/template.repository.js";
 
 @injectable()
 export class ContainerCommands {
-  constructor(@inject(ContainersRepository) private containersRepository: ContainersRepository) {}
+  constructor(
+    @inject(ContainersRepository) private containersRepository: ContainersRepository,
+    @inject(TemplatesRepository) private templatesRepository: TemplatesRepository,
+  ) {}
 
   async createContainer(name: string) {
     if (!name || name.trim().length < 1) {
@@ -64,5 +68,43 @@ export class ContainerCommands {
     await this.containersRepository.switchToAnotherContainer(containerName.trim());
 
     return `switch to "${containerName}" container was saccessfully`;
+  }
+
+  async removeContainer(containerName: string) {
+    if (containerName.trim() === "null") {
+      throw new Error("you cannot remove this container");
+    } else if (!containerName || containerName.trim().length < 1) {
+      throw new Error("the name cannot be empty");
+    } else if (containerName.trim().length > 50) {
+      throw new Error("the name is too long, max 50 characters");
+    }
+
+    const container = await this.containersRepository.getContainerByName(containerName.trim());
+
+    if (!container) {
+      throw new Error("this container not found");
+    }
+
+    const currentContainer = await this.containersRepository.getCurrentContainer();
+
+    if (currentContainer && containerName.trim() === currentContainer.name) {
+      throw new Error(
+        "you cannot remove the current container, please switch to another container",
+      );
+    }
+
+    const templates = await this.templatesRepository.getAllTemplatesInContainer(
+      containerName.trim(),
+    );
+
+    if (templates.length > 0) {
+      throw new Error(
+        "there are still items in this container, please delete them or move them to another container",
+      );
+    }
+
+    await this.containersRepository.removeContainerById(container.id!);
+
+    return `container "${container.name}" was successfully removed`;
   }
 }

@@ -51,4 +51,12 @@ export class ContainersRepository {
     configData.currentContainer = containerName.trim();
     fs.writeFileSync(globalVariables.configPath, JSON.stringify(configData, null, 2));
   }
+
+  async removeContainerById(id: number) {
+    await ContainerModel.destroy({
+      where: {
+        id: id,
+      },
+    });
+  }
 }

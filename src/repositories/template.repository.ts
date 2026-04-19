@@ -91,6 +91,25 @@ export class TemplatesRepository {
     return templates as Array<TemplateModel & { container: ContainerModel }>;
   }
 
+  async getAllTemplatesInContainer(
+    containerName: string,
+  ): Promise<Array<TemplateModel & { container: ContainerModel }>> {
+    const templates = await TemplateModel.findAll({
+      include: [
+        {
+          model: ContainerModel,
+          as: "container",
+          where: { name: containerName.trim() },
+          required: true,
+        },
+      ],
+      raw: true,
+      nest: true,
+    });
+
+    return templates as Array<TemplateModel & { container: ContainerModel }>;
+  }
+
   async updateTemplateById(
     id: string,
     newName: string,

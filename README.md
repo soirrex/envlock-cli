@@ -94,6 +94,13 @@ npm uni -g envlock-cli
   el switch <containerName>
   ```
 
+- **Remove container:**  
+  Remove container by name:
+
+  ```bash
+  el rmc <containerName>
+  ```
+
 ### Templates Management
 
 - **Save template:**  

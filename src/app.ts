@@ -168,6 +168,19 @@ export class App {
       });
 
     this.program
+      .command("rmc")
+      .description("Remove container")
+      .argument("<containerName>", "Container name")
+      .action(async (containerName) => {
+        try {
+          const message = await this.containerCommands.removeContainer(containerName);
+          console.log(message);
+        } catch (err: unknown) {
+          this.handleError(err);
+        }
+      });
+
+    this.program
       .command("switch")
       .description("Switch to another container")
       .argument("<containerName>", "Container name")

@@ -168,8 +168,6 @@ describe("Password repository", () => {
     });
 
     it("should return all templates when ignoreCurrentContainer true", async () => {
-      mockContainersRepository.getCurrentContainer.mockResolvedValue(mockContainer);
-
       const getSpy = jest
         .spyOn(TemplateModel, "findAll")
         .mockResolvedValue([mockTemplateWithContainer, mockTemplateWithContainer]);
@@ -178,6 +176,33 @@ describe("Password repository", () => {
 
       expect(getSpy).toHaveBeenCalledWith({
         include: [{ model: ContainerModel, as: "container" }],
+        raw: true,
+        nest: true,
+      });
+
+      expect(result).toEqual([mockTemplateWithContainer, mockTemplateWithContainer]);
+    });
+  });
+
+  describe("get all templates in container", () => {
+    it("get all templates in container", async () => {
+      const getSpy = jest
+        .spyOn(TemplateModel, "findAll")
+        .mockResolvedValue([mockTemplateWithContainer, mockTemplateWithContainer]);
+
+      const result = await repo.getAllTemplatesInContainer("  " + mockContainer.name + "      ");
+
+      expect(getSpy).toHaveBeenCalledWith({
+        include: [
+          {
+            model: ContainerModel,
+            as: "container",
+            required: true,
+            where: {
+              name: "container",
+            },
+          },
+        ],
         raw: true,
         nest: true,
       });

@@ -1,7 +1,9 @@
 /* eslint @typescript-eslint/no-explicit-any: "off" */
 
 import { ContainerModel } from "../../models/container.model.js";
+import { TemplateModel } from "../../models/template.model.js";
 import { ContainersRepository } from "../../repositories/container.repository.js";
+import { TemplatesRepository } from "../../repositories/template.repository.js";
 import { ContainerCommands } from "../container.commands.js";
 import { jest } from "@jest/globals";
 import chalk from "chalk";
@@ -9,11 +11,27 @@ import chalk from "chalk";
 describe("Containers commands test", () => {
   let commands: ContainerCommands;
   let mockContainersRepository: jest.Mocked<ContainersRepository>;
+  let mockTemplatesRepository: jest.Mocked<TemplatesRepository>;
+
+  const mockTemplate = {
+    name: "template1",
+    description: "description",
+    encrypted_data: "base64string",
+    salt: "base64salt",
+    iv: "base64iv",
+    tag: "base64tag",
+    createdAt: new Date(),
+  } as TemplateModel;
 
   const mockContainer = {
     id: 1,
     name: "container",
   } as ContainerModel;
+
+  const mockTemplateWithContainer = {
+    ...mockTemplate,
+    container: mockContainer,
+  } as TemplateModel & { container: ContainerModel };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -24,9 +42,17 @@ describe("Containers commands test", () => {
       getAllContainers: jest.fn(),
       getCurrentContainer: jest.fn(),
       switchToAnotherContainer: jest.fn(),
+      removeContainerById: jest.fn(),
     } as unknown as jest.Mocked<ContainersRepository>;
 
-    commands = new ContainerCommands(mockContainersRepository as ContainersRepository);
+    mockTemplatesRepository = {
+      getAllTemplatesInContainer: jest.fn(),
+    } as unknown as jest.Mocked<TemplatesRepository>;
+
+    commands = new ContainerCommands(
+      mockContainersRepository as ContainersRepository,
+      mockTemplatesRepository as TemplatesRepository,
+    );
   });
 
   describe("Create container", () => {
@@ -128,11 +154,79 @@ describe("Containers commands test", () => {
       expect(result).toEqual(`switch to "${mockContainer.name}" container was saccessfully`);
     });
 
-    it("switch to another container if name to equal null", async () => {
+    it('switch to another container if the name is "null"', async () => {
       const result = await commands.switchToAnotherContainer("null");
 
       expect(mockContainersRepository.switchToAnotherContainer).toHaveBeenCalledWith("null");
       expect(result).toEqual('switch to "null" container was saccessfully');
+    });
+  });
+
+  describe("Remove remplate", () => {
+    it("should throw error if name is empty", async () => {
+      await expect(commands.removeContainer("")).rejects.toThrow(
+        new Error("the name cannot be empty"),
+      );
+      expect(mockContainersRepository.removeContainerById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if name is too long", async () => {
+      await expect(commands.removeContainer("a".repeat(51))).rejects.toThrow(
+        new Error("the name is too long, max 50 characters"),
+      );
+      expect(mockContainersRepository.removeContainerById).not.toHaveBeenCalled();
+    });
+
+    it('should throw error if the name is "null"', async () => {
+      await expect(commands.removeContainer("null")).rejects.toThrow(
+        new Error("you cannot remove this container"),
+      );
+      expect(mockContainersRepository.removeContainerById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if container not found", async () => {
+      mockContainersRepository.getContainerByName.mockResolvedValue(null);
+
+      await expect(commands.removeContainer(mockContainer.name)).rejects.toThrow(
+        new Error("this container not found"),
+      );
+      expect(mockContainersRepository.removeContainerById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if the name matches the current container", async () => {
+      mockContainersRepository.getContainerByName.mockResolvedValue(mockContainer);
+      mockContainersRepository.getCurrentContainer.mockResolvedValue(mockContainer);
+
+      await expect(commands.removeContainer(mockContainer.name)).rejects.toThrow(
+        new Error("you cannot remove the current container, please switch to another container"),
+      );
+      expect(mockContainersRepository.removeContainerById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if there are still items in the container", async () => {
+      mockContainersRepository.getContainerByName.mockResolvedValue(mockContainer);
+      mockContainersRepository.getCurrentContainer.mockResolvedValue(null);
+      mockTemplatesRepository.getAllTemplatesInContainer.mockResolvedValue([
+        mockTemplateWithContainer,
+      ]);
+
+      await expect(commands.removeContainer(mockContainer.name)).rejects.toThrow(
+        new Error(
+          "there are still items in this container, please delete them or move them to another container",
+        ),
+      );
+      expect(mockContainersRepository.removeContainerById).not.toHaveBeenCalled();
+    });
+
+    it("remove container", async () => {
+      mockContainersRepository.getContainerByName.mockResolvedValue(mockContainer);
+      mockContainersRepository.getCurrentContainer.mockResolvedValue(null);
+      mockTemplatesRepository.getAllTemplatesInContainer.mockResolvedValue([]);
+
+      const result = await commands.removeContainer(mockContainer.name);
+
+      expect(mockContainersRepository.removeContainerById).toHaveBeenCalledWith(mockContainer.id);
+      expect(result).toEqual(`container "${mockContainer.name}" was successfully removed`);
     });
   });
 });
