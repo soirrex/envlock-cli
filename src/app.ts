@@ -179,6 +179,23 @@ export class App {
           this.handleError(err);
         }
       });
+
+    this.program
+      .command("move")
+      .description("Move template to another container")
+      .argument("<templateName>", "template name")
+      .argument("<containerName>", "container name")
+      .action(async (templateName, containerName) => {
+        try {
+          const message = await this.envTemplateCommands.moveTemplateToAnotherContainer(
+            templateName,
+            containerName,
+          );
+          console.log(message);
+        } catch (err: unknown) {
+          this.handleError(err);
+        }
+      });
   }
 
   private createHomeDir() {

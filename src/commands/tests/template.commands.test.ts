@@ -10,6 +10,7 @@ import inquirer from "inquirer";
 import fs from "fs";
 import path from "path";
 import { ContainerModel } from "../../models/container.model.js";
+import { ContainersRepository } from "../../repositories/container.repository.js";
 
 describe("Template commands test", () => {
   let commands: EnvTemplateCommands;
@@ -17,6 +18,7 @@ describe("Template commands test", () => {
   let mockPasswordRepository: jest.Mocked<PasswordRepository>;
   let mockCryptoService: jest.Mocked<CryptoService>;
   let mockTemplatesRepository: jest.Mocked<TemplatesRepository>;
+  let mockContainersRepository: jest.Mocked<ContainersRepository>;
 
   const mockTemplate = {
     name: "template1",
@@ -58,12 +60,18 @@ describe("Template commands test", () => {
       removeTemplateByName: jest.fn(),
       getAllTemplates: jest.fn(),
       updateTemplateById: jest.fn(),
+      moveTemplateToAnotherContainer: jest.fn(),
     } as unknown as jest.Mocked<TemplatesRepository>;
+
+    mockContainersRepository = {
+      getContainerByName: jest.fn(),
+    } as unknown as jest.Mocked<ContainersRepository>;
 
     commands = new EnvTemplateCommands(
       mockPasswordRepository as PasswordRepository,
       mockCryptoService as CryptoService,
       mockTemplatesRepository as TemplatesRepository,
+      mockContainersRepository as ContainersRepository,
     );
   });
 
@@ -631,6 +639,100 @@ describe("Template commands test", () => {
 
       expect(mockTemplatesRepository.removeTemplateByName).toHaveBeenCalledWith(mockTemplate.name);
       expect(result).toEqual("the template has been successfully removed");
+    });
+  });
+
+  describe("Move template to another container", () => {
+    it("should throw error if template name is empty", async () => {
+      await expect(commands.moveTemplateToAnotherContainer("", mockContainer.name)).rejects.toThrow(
+        new Error("the template name cannot be empty"),
+      );
+      expect(mockTemplatesRepository.moveTemplateToAnotherContainer).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if template name is too long", async () => {
+      await expect(
+        commands.moveTemplateToAnotherContainer("a".repeat(51), mockContainer.name),
+      ).rejects.toThrow(new Error("the template name is too long, max 50 characters"));
+
+      expect(mockTemplatesRepository.moveTemplateToAnotherContainer).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if container name is empty", async () => {
+      await expect(commands.moveTemplateToAnotherContainer(mockTemplate.name, "")).rejects.toThrow(
+        new Error("the container name cannot be empty"),
+      );
+
+      expect(mockTemplatesRepository.moveTemplateToAnotherContainer).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if container name is too long", async () => {
+      await expect(
+        commands.moveTemplateToAnotherContainer(mockTemplate.name, "a".repeat(51)),
+      ).rejects.toThrow(new Error("the container name is too long, max 50 characters"));
+
+      expect(mockTemplatesRepository.moveTemplateToAnotherContainer).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if template not found", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(null);
+
+      await expect(
+        commands.moveTemplateToAnotherContainer(mockTemplate.name, mockContainer.name),
+      ).rejects.toThrow(new Error("template with this name not found"));
+
+      expect(mockTemplatesRepository.moveTemplateToAnotherContainer).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if move a template into a container where it is already located", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
+
+      await expect(
+        commands.moveTemplateToAnotherContainer(mockTemplate.name, mockContainer.name),
+      ).rejects.toThrow(
+        new Error("you cannot move a template into a container where it is already located"),
+      );
+
+      expect(mockTemplatesRepository.moveTemplateToAnotherContainer).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if container not found", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
+      mockContainersRepository.getContainerByName.mockResolvedValue(null);
+
+      await expect(
+        commands.moveTemplateToAnotherContainer(mockTemplate.name, "new container"),
+      ).rejects.toThrow(new Error("container with this name not found"));
+
+      expect(mockTemplatesRepository.moveTemplateToAnotherContainer).not.toHaveBeenCalled();
+    });
+
+    it("move template to another container", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
+      mockContainersRepository.getContainerByName.mockResolvedValue(mockContainer);
+
+      const result = await commands.moveTemplateToAnotherContainer(
+        mockTemplate.name,
+        "new container",
+      );
+
+      expect(mockTemplatesRepository.moveTemplateToAnotherContainer).toHaveBeenCalledWith(
+        mockTemplate.name,
+        "new container",
+      );
+      expect(result).toEqual('template "template1" move to "new container" container successfully');
+    });
+
+    it("move template to another container if container name to equal null", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
+
+      const result = await commands.moveTemplateToAnotherContainer(mockTemplate.name, "null  ");
+
+      expect(mockTemplatesRepository.moveTemplateToAnotherContainer).toHaveBeenCalledWith(
+        mockTemplate.name,
+        "null",
+      );
+      expect(result).toEqual('template "template1" move to "null" container successfully');
     });
   });
 });

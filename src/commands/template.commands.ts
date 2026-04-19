@@ -5,6 +5,7 @@ import { CryptoService } from "../services/crypto.service.js";
 import { TemplatesRepository } from "../repositories/template.repository.js";
 import fs from "fs";
 import path from "path";
+import { ContainersRepository } from "../repositories/container.repository.js";
 
 interface IGetTemplate {
   name: string;
@@ -19,6 +20,7 @@ export class EnvTemplateCommands {
     @inject(PasswordRepository) private readonly passwordRepository: PasswordRepository,
     @inject(CryptoService) private readonly cryptoService: CryptoService,
     @inject(TemplatesRepository) private readonly templatesRepository: TemplatesRepository,
+    @inject(ContainersRepository) private readonly containersRepository: ContainersRepository,
   ) {}
 
   async saveTemplate(
@@ -267,6 +269,41 @@ export class EnvTemplateCommands {
     await this.templatesRepository.removeTemplateByName(name);
 
     return "the template has been successfully removed";
+  }
+
+  async moveTemplateToAnotherContainer(templateName: string, containerName: string) {
+    if (!templateName || templateName.trim().length < 1) {
+      throw new Error("the template name cannot be empty");
+    } else if (!containerName || containerName.trim().length < 1) {
+      throw new Error("the container name cannot be empty");
+    } else if (templateName.trim().length > 50) {
+      throw new Error("the template name is too long, max 50 characters");
+    } else if (containerName.trim().length > 50) {
+      throw new Error("the container name is too long, max 50 characters");
+    }
+
+    const template = await this.templatesRepository.getTemplateByName(templateName.trim());
+
+    if (!template) {
+      throw new Error("template with this name not found");
+    } else if (containerName.trim() === String(template.container.name)) {
+      throw new Error("you cannot move a template into a container where it is already located");
+    }
+
+    if (containerName.trim() !== "null") {
+      const container = await this.containersRepository.getContainerByName(containerName.trim());
+
+      if (!container) {
+        throw new Error("container with this name not found");
+      }
+    }
+
+    await this.templatesRepository.moveTemplateToAnotherContainer(
+      templateName.trim(),
+      containerName.trim().toString(),
+    );
+
+    return `template "${templateName.trim()}" move to "${containerName.trim()}" container successfully`;
   }
 
   private async checkMasterPassword(): Promise<string> {

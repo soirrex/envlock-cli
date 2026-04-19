@@ -24,6 +24,7 @@ describe("Password repository", () => {
 
     mockContainersRepository = {
       getCurrentContainer: jest.fn(),
+      getContainerByName: jest.fn(),
     } as unknown as jest.Mocked<ContainersRepository>;
 
     repo = new TemplatesRepository(mockContainersRepository as ContainersRepository);
@@ -37,6 +38,13 @@ describe("Password repository", () => {
 
       expect(getSpy).toHaveBeenCalledWith({
         where: { name: "name" },
+        include: [
+          {
+            as: "container",
+            model: ContainerModel,
+          },
+        ],
+        nest: true,
         raw: true,
       });
 
@@ -50,6 +58,13 @@ describe("Password repository", () => {
 
       expect(getSpy).toHaveBeenCalledWith({
         where: { name: "name" },
+        include: [
+          {
+            as: "container",
+            model: ContainerModel,
+          },
+        ],
+        nest: true,
         raw: true,
       });
 
@@ -197,6 +212,42 @@ describe("Password repository", () => {
       const destroySpy = jest.spyOn(TemplateModel, "destroy").mockResolvedValue(1);
       await repo.removeTemplateByName("  name ");
       expect(destroySpy).toHaveBeenCalledWith({ where: { name: "name" } });
+    });
+  });
+
+  describe("move template to another container", () => {
+    it("should throw error if container not found", async () => {
+      mockContainersRepository.getContainerByName.mockResolvedValue(null);
+      const updateSpy = jest.spyOn(TemplateModel, "update").mockResolvedValue([1, []] as any);
+
+      await expect(
+        repo.moveTemplateToAnotherContainer(mockTemplate.name, "wrong container"),
+      ).rejects.toThrow(new Error("container with this name not found"));
+
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
+
+    it("move template to another container", async () => {
+      mockContainersRepository.getContainerByName.mockResolvedValue(mockContainer);
+      const updateSpy = jest.spyOn(TemplateModel, "update").mockResolvedValue([1, []] as any);
+
+      await repo.moveTemplateToAnotherContainer(mockTemplate.name, mockContainer.name);
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        { containerId: 1 },
+        { where: { name: "name" }, returning: true },
+      );
+    });
+
+    it("move template to another container if container name to equal null", async () => {
+      const updateSpy = jest.spyOn(TemplateModel, "update").mockResolvedValue([1, []] as any);
+
+      await repo.moveTemplateToAnotherContainer(mockTemplate.name, "null");
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        { containerId: null },
+        { where: { name: "name" }, returning: true },
+      );
     });
   });
 });

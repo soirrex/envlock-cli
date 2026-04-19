@@ -15,7 +15,14 @@ export class TemplatesRepository {
       where: {
         name: name.trim(),
       },
+      include: [
+        {
+          model: ContainerModel,
+          as: "container",
+        },
+      ],
       raw: true,
+      nest: true,
     });
 
     return template as (TemplateModel & { container: ContainerModel }) | null;
@@ -114,5 +121,35 @@ export class TemplatesRepository {
 
   async removeTemplateByName(name: string) {
     await TemplateModel.destroy({ where: { name: name.trim() } });
+  }
+
+  async moveTemplateToAnotherContainer(templateName: string, containerName: string) {
+    if (containerName === "null") {
+      await TemplateModel.update(
+        { containerId: null },
+        {
+          where: {
+            name: templateName.trim(),
+          },
+          returning: true,
+        },
+      );
+    } else {
+      const container = await this.containersRepository.getContainerByName(containerName.trim());
+
+      if (!container) {
+        throw new Error("container with this name not found");
+      }
+
+      await TemplateModel.update(
+        { containerId: container.id },
+        {
+          where: {
+            name: templateName.trim(),
+          },
+          returning: true,
+        },
+      );
+    }
   }
 }
