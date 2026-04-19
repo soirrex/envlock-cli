@@ -154,6 +154,13 @@ npm uni -g envlock-cli
 
   If you want to use a different password for decryption, you can specify it with the `--password` option.
 
+- **Move template to another container:**  
+  Move template to another container:
+
+  ```bash
+  el move <templateName> <containerName>
+  ```
+
 - **Remove template:**  
   Remove a specific template:
   ```bash
