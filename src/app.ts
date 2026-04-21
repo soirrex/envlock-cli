@@ -261,9 +261,9 @@ export class App {
   start() {
     this.program
       .name("el")
-      .version("1.0.5")
+      .version("1.0.6")
       .description(
-        "CLI tool for secure management of .env templates. It stores templates locally, encrypts them with a master password, and allows quick project integration.",
+        "envlock-cli is a secure command-line interface for managing encrypted .env templates. Store configurations locally, protect each template with a unique password, and group them into containers (frontend, backend, staging). It’s ideal for securely setting up environments and protecting sensitive data during the development process.",
       );
 
     this.registerCommands();

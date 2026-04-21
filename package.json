@@ -1,7 +1,7 @@
 {
   "name": "envlock-cli",
-  "version": "1.0.5",
-  "description": "CLI tool for secure management of .env templates. It stores templates locally, encrypts them with a master password, and allows quick project integration.",
+  "version": "1.0.6",
+  "description": "envlock-cli is a secure command-line interface for managing encrypted .env templates. Store configurations locally, protect each template with a unique password, and group them into containers (frontend, backend, staging). It’s ideal for securely setting up environments and protecting sensitive data during the development process.",
   "main": "dist/index.js",
   "scripts": {
     "dev": "npx tsx src/index.ts",
