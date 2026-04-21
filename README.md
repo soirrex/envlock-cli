@@ -8,11 +8,28 @@
 
 <br>
 
-envlock-cli is a command-line application (CLI) designed for securely managing .env file templates. envlock-cli allows you to store templates locally on your computer, protect them with a master password, and quickly integrate them into projects
+envlock-cli is a powerful command-line tool for securely managing .env file templates. The application allows you to store configuration templates locally on your computer, protect them with passwords and encryption, and quickly integrate them into new projects, saving time on environment setup. Each template can be protected with a unique password, providing flexible access control for different projects. Thanks to the container system, you can logically isolate templates by project or environment (e.g., frontend, backend, staging), quickly switch between them, and ensure that settings from different projects never get mixed up.
+
+## Example of use
+
+```bash
+# 1. Set a master password
+el password
+
+# 2. Create a project container (for example, 'shop')
+el container shop
+el switch shop
+
+# 3. Save the current .env file as a template with a unique password
+el save shop_base --file ./.env --description "Shop database .env"
+
+# 4. Restore the template in the new project
+el write shop_base ./new-shop/.env --overwrite
+```
 
 ## Install
 
-### Manual installation:
+#### Manual installation:
 
 ```
 git clone https://github.com/soirrex/envlock-cli.git
@@ -22,19 +39,19 @@ npm run build
 npm i -g .
 ```
 
-### Install via npm:
+#### Install via npm:
 
 ```
 npm i -g envlock-cli
 ```
 
-### Uninstall:
+#### Uninstall:
 
 ```
 npm uni -g envlock-cli
 ```
 
-## Usage
+## Commands documentation
 
 > If you encounter an error related to a mismatch in database fields, use the following command:
 
