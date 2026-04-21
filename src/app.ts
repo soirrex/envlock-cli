@@ -127,15 +127,25 @@ export class App {
       .command("update")
       .description("Update template")
       .argument("<name>", "Template name")
-      .option("-n, --name <name>", "new name for the template")
-      .option("-d, --description <description>", "new description for the template")
+      .option("-n, --name <name>", "New name for the template")
+      .option("-d, --description <description>", "New description for the template")
+      .option("-c, --content", "Update the encrypted data in the template")
+      .option("-p, --password", "Use a different password (not a master)")
       .action(async (name, options) => {
         try {
-          const message = await this.envTemplateCommands.updateTemplateByName(
-            name,
-            options.name,
-            options.description,
-          );
+          let message;
+          if (options.content) {
+            message = await this.envTemplateCommands.updateTemplateContentByName(
+              name,
+              options.password,
+            );
+          } else {
+            message = await this.envTemplateCommands.updateTemplateByName(
+              name,
+              options.name,
+              options.description,
+            );
+          }
           console.table(message);
         } catch (err: unknown) {
           this.handleError(err);

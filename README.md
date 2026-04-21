@@ -116,48 +116,58 @@ el dbalter
 
 ### Templates Management
 
-- **Save template:**  
-  Create a new template:
+- **Save template:**
+  - **Create a new template:**
 
-  ```bash
-  el save <name> --description <description>
-  ```
+    ```bash
+    el save <name> --description <description>
+    ```
 
-  If you want to use a different password for encryption, you can specify it with the `--password` option.
+  - **Copy the file to the template:**  
+    Save the existing file as a template:
 
-- **Copy the file to the template:**  
-  Save the existing file as a template:
-
-  ```bash
-  el save <name> --file <path> --description <description>
-  ```
+    ```bash
+    el save <name> --file <path> --description <description>
+    ```
 
   If you want to use a different password for encryption, you can specify it with the `--password` option.
 
-- **Get all templates:**  
-  Get a list of all templates:
+- **Get templates:**
+  - **Get all templates:**  
+    Get a list of all templates:
 
-  ```bash
-  el get
-  ```
+    ```bash
+    el get
+    ```
 
-  If you want to get all templates from all containers, you can specify it with the `--containers` option.
+    If you want to get all templates from all containers, you can specify it with the `--containers` option.
 
-- **Get a template by name:**  
-  Get a specific template:
+  - **Get a template by name:**  
+    Get a specific template:
 
-  ```bash
-  el get --name <name>
-  ```
+    ```bash
+    el get --name <name>
+    ```
 
-  If you want to use a different password for decryption, you can specify it with the `--password` option.
+    If you want to use a different password for decryption, you can specify it with the `--password` option.
 
-- **Update template by name:**  
-  Update template by name:
+- **Update template by name:**
+  - **Update template data by name:**
 
-  ```bash
-  el update <name> --name <newName> --description <newDescription>
-  ```
+    ```bash
+    el update <name> --name <newName> --description <newDescription>
+    ```
+
+  - **Update template content:**  
+    Update the encrypted data in the template:
+
+    ```bash
+    el update <name> --content
+    ```
+
+    If you want to use a different password for decryption, you can specify it with the `--password` option.
+
+  > You cannot use all flags in a command at the same time, if you use `el update <name> --name <newName> --description <newDescriptio> --content`, the `--content` flag will always take precedence when all flags are used together, and the other flags will be ignored
 
 - **Save the template to a file:**  
   Save the template to the specified file:

@@ -256,6 +256,62 @@ export class EnvTemplateCommands {
     };
   }
 
+  async updateTemplateContentByName(templateName: string, password?: boolean) {
+    if (templateName.trim().length < 1) {
+      throw new Error("the name cannot be empty");
+    }
+
+    const template = await this.templatesRepository.getTemplateByName(templateName.trim());
+
+    if (!template) {
+      throw new Error("the template with this name not found");
+    }
+
+    let encryptPassword: string;
+
+    if (password) {
+      const answers = await inquirer.prompt([
+        { name: "password", type: "password", message: "Enter password:", mask: "*" },
+      ]);
+
+      if (!answers.password || answers.password.length < 1) {
+        throw new Error("the password cannot be empty, please enter a valid password");
+      }
+
+      encryptPassword = answers.password;
+    } else {
+      encryptPassword = await this.checkMasterPassword();
+    }
+
+    const data = this.cryptoService.decrypt(
+      encryptPassword,
+      template.encrypted_data,
+      template.salt,
+      template.iv,
+      template.tag,
+    );
+
+    const answers = await inquirer.prompt([
+      { name: "template", type: "editor", message: "Enter your .env template", default: data },
+    ]);
+
+    if (!answers.template || answers.template.length < 0) {
+      throw new Error("the template cannot be empty, please enter the .env template");
+    }
+
+    const encrypt = this.cryptoService.encrypt(encryptPassword, answers.template);
+
+    this.templatesRepository.updateTemplateEncryptedDataById(
+      template.id,
+      encrypt.encrypted_data,
+      encrypt.salt,
+      encrypt.iv,
+      encrypt.tag,
+    );
+
+    return "the template data has been successfully updated";
+  }
+
   async removeTemplateByName(name: string): Promise<string> {
     if (name.trim().length < 1) {
       throw new Error("the name cannot be empty");
@@ -309,7 +365,7 @@ export class EnvTemplateCommands {
   private async checkMasterPassword(): Promise<string> {
     const password = await this.passwordRepository.getMasterPassword();
     if (!password) {
-      throw new Error("you don't have a master password");
+      throw new Error("you don't have a password");
     }
 
     return password;

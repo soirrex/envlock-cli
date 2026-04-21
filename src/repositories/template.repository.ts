@@ -138,6 +138,23 @@ export class TemplatesRepository {
     return template;
   }
 
+  async updateTemplateEncryptedDataById(
+    id: string,
+    encrypted_data: string,
+    salt: string,
+    iv: string,
+    tag: string,
+  ) {
+    const [count] = await TemplateModel.update(
+      { encrypted_data: encrypted_data, salt: salt, iv: iv, tag: tag },
+      { where: { id: id }, returning: true },
+    );
+
+    if (count === 0) {
+      throw new Error("the tempalte not found");
+    }
+  }
+
   async removeTemplateByName(name: string) {
     await TemplateModel.destroy({ where: { name: name.trim() } });
   }

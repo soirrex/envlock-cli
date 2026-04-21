@@ -21,6 +21,7 @@ describe("Template commands test", () => {
   let mockContainersRepository: jest.Mocked<ContainersRepository>;
 
   const mockTemplate = {
+    id: "id-1",
     name: "template1",
     description: "description",
     encrypted_data: "base64string",
@@ -61,6 +62,7 @@ describe("Template commands test", () => {
       getAllTemplates: jest.fn(),
       updateTemplateById: jest.fn(),
       moveTemplateToAnotherContainer: jest.fn(),
+      updateTemplateEncryptedDataById: jest.fn(),
     } as unknown as jest.Mocked<TemplatesRepository>;
 
     mockContainersRepository = {
@@ -100,7 +102,7 @@ describe("Template commands test", () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue(null);
 
       await expect(commands.saveTemplate(mockTemplate.name)).rejects.toThrow(
-        "you don't have a master password",
+        "you don't have a password",
       );
 
       expect(mockTemplatesRepository.createTemplate).not.toHaveBeenCalled();
@@ -332,7 +334,7 @@ describe("Template commands test", () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue(null);
 
       await expect(commands.getTemplateByName(mockTemplate.name)).rejects.toThrow(
-        "you don't have a master password",
+        "you don't have a password",
       );
     });
 
@@ -409,7 +411,7 @@ describe("Template commands test", () => {
       mockPasswordRepository.getMasterPassword.mockResolvedValue(null);
 
       await expect(commands.writeTemplateToFile(mockTemplate.name, "path/to/file")).rejects.toThrow(
-        "you don't have a master password",
+        "you don't have a password",
       );
 
       expect(mockCryptoService.decrypt).not.toHaveBeenCalled();
@@ -613,6 +615,161 @@ describe("Template commands test", () => {
         mockTemplate.id,
         "newName",
         "newDescription",
+      );
+    });
+  });
+
+  describe("Update encrypted template data", () => {
+    it("should throw error if name is empty", async () => {
+      await expect(commands.updateTemplateContentByName("  ")).rejects.toThrow(
+        "the name cannot be empty",
+      );
+
+      expect(mockTemplatesRepository.updateTemplateEncryptedDataById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if template not found", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(null);
+      await expect(commands.updateTemplateContentByName(mockTemplate.name)).rejects.toThrow(
+        "the template with this name not found",
+      );
+
+      expect(mockTemplatesRepository.updateTemplateEncryptedDataById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if user don't have a password", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
+      mockPasswordRepository.getMasterPassword.mockResolvedValue(null);
+
+      await expect(commands.updateTemplateContentByName(mockTemplate.name)).rejects.toThrow(
+        "you don't have a password",
+      );
+
+      expect(mockTemplatesRepository.updateTemplateEncryptedDataById).not.toHaveBeenCalled();
+    });
+
+    it("should throw error if template data is empty", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
+      mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
+      mockCryptoService.decrypt.mockReturnValue("tamplate data");
+
+      const promptSpy = jest.spyOn(inquirer, "prompt" as any).mockResolvedValue({ template: "" });
+
+      await expect(commands.updateTemplateContentByName(mockTemplate.name)).rejects.toThrow(
+        "the template cannot be empty, please enter the .env template",
+      );
+
+      expect(mockCryptoService.decrypt).toHaveBeenCalledWith(
+        "password",
+        mockTemplate.encrypted_data,
+        mockTemplate.salt,
+        mockTemplate.iv,
+        mockTemplate.tag,
+      );
+      expect(promptSpy).toHaveBeenCalledWith([
+        {
+          default: "tamplate data",
+          message: "Enter your .env template",
+          name: "template",
+          type: "editor",
+        },
+      ]);
+
+      expect(mockTemplatesRepository.updateTemplateEncryptedDataById).not.toHaveBeenCalled();
+    });
+
+    it("update encrypted template data", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
+      mockPasswordRepository.getMasterPassword.mockResolvedValue("password");
+      mockCryptoService.decrypt.mockReturnValue("tamplate data");
+
+      const promptSpy = jest
+        .spyOn(inquirer, "prompt" as any)
+        .mockResolvedValue({ template: "new template data" });
+
+      mockCryptoService.encrypt.mockReturnValue({
+        encrypted_data: "encrypted_data",
+        salt: "salt",
+        iv: "iv",
+        tag: "tag",
+      });
+
+      const result = await commands.updateTemplateContentByName(mockTemplate.name);
+
+      expect(mockCryptoService.decrypt).toHaveBeenCalledWith(
+        "password",
+        mockTemplate.encrypted_data,
+        mockTemplate.salt,
+        mockTemplate.iv,
+        mockTemplate.tag,
+      );
+
+      expect(result).toEqual("the template data has been successfully updated");
+      expect(promptSpy).toHaveBeenCalledWith([
+        {
+          default: "tamplate data",
+          message: "Enter your .env template",
+          name: "template",
+          type: "editor",
+        },
+      ]);
+
+      expect(mockCryptoService.encrypt).toHaveBeenCalledWith("password", "new template data");
+      expect(mockTemplatesRepository.updateTemplateEncryptedDataById).toHaveBeenCalledWith(
+        mockTemplate.id,
+        "encrypted_data",
+        "salt",
+        "iv",
+        "tag",
+      );
+    });
+
+    it("update encrypted template data with use different password", async () => {
+      mockTemplatesRepository.getTemplateByName.mockResolvedValue(mockTemplateWithContainer);
+      mockCryptoService.decrypt.mockReturnValue("tamplate data");
+      mockCryptoService.encrypt.mockReturnValue({
+        encrypted_data: "encrypted_data",
+        salt: "salt",
+        iv: "iv",
+        tag: "tag",
+      });
+
+      const promptSpy = jest
+        .spyOn(inquirer, "prompt" as any)
+        .mockResolvedValueOnce({ password: "different password" })
+        .mockResolvedValueOnce({ template: "new template data" });
+
+      const result = await commands.updateTemplateContentByName(mockTemplate.name, true);
+
+      expect(mockCryptoService.decrypt).toHaveBeenCalledWith(
+        "different password",
+        mockTemplate.encrypted_data,
+        mockTemplate.salt,
+        mockTemplate.iv,
+        mockTemplate.tag,
+      );
+
+      expect(result).toEqual("the template data has been successfully updated");
+      expect(promptSpy).toHaveBeenCalledWith([
+        {
+          default: "tamplate data",
+          message: "Enter your .env template",
+          name: "template",
+          type: "editor",
+        },
+      ]);
+
+      expect(mockCryptoService.encrypt).toHaveBeenCalledWith(
+        "different password",
+        "new template data",
+      );
+
+      expect(mockTemplatesRepository.updateTemplateEncryptedDataById).toHaveBeenCalledWith(
+        mockTemplate.id,
+        "encrypted_data",
+        "salt",
+        "iv",
+        "tag",
       );
     });
   });

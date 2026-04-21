@@ -232,6 +232,19 @@ describe("Password repository", () => {
     });
   });
 
+  describe("update encrypted template data by id", () => {
+    it("should update and return the template", async () => {
+      const updateSpy = jest.spyOn(TemplateModel, "update").mockResolvedValue([1, []] as any);
+
+      await repo.updateTemplateEncryptedDataById("id-1", "encrypted_data", "salt", "iv", "tag");
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        { encrypted_data: "encrypted_data", iv: "iv", salt: "salt", tag: "tag" },
+        { where: { id: "id-1" }, returning: true },
+      );
+    });
+  });
+
   describe("remove template by name", () => {
     it("remove template", async () => {
       const destroySpy = jest.spyOn(TemplateModel, "destroy").mockResolvedValue(1);
